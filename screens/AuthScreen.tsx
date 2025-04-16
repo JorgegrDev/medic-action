@@ -73,6 +73,9 @@ export default function AuthScreen() {
         })
 
         if (error) throw error
+
+        // Navigate to the main screen after successful sign-in
+        navigation.navigate("Main")
       }
     } catch (error) {
       console.error("Error signing in with Google:", error)
@@ -94,6 +97,9 @@ export default function AuthScreen() {
       })
 
       if (error) throw error
+
+      // Navigate to the main screen after successful sign-in
+      navigation.navigate("Main")
     } catch (error: any) {
       console.error("Error signing in:", error)
       Alert.alert("Error", error.message || "Ocurrió un error al iniciar sesión")
