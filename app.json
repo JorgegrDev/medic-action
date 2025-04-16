@@ -22,7 +22,9 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.medicaction.app",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
@@ -31,15 +33,22 @@
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff"
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "androidClientId": "892453499923-1h0m9b0kcn1u2c04tq470i4e5h9gsfd6.apps.googleusercontent.com"
+        }
       ]
     ],
     "extra": {
-      "supabaseUrl": "https://your-supabase-project-url.supabase.co",
-      "supabaseAnonKey": "your-supabase-anon-key",
-      "googleExpoClientId": "YOUR_GOOGLE_EXPO_CLIENT_ID",
-      "googleAndroidClientId": "YOUR_GOOGLE_ANDROID_CLIENT_ID",
-      "googleIosClientId": "YOUR_GOOGLE_IOS_CLIENT_ID",
-      "googleWebClientId": "YOUR_GOOGLE_WEB_CLIENT_ID"
+      "supabaseUrl": "https://zityutmxyyajzovmezaf.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdHl1dG14eXlhanpvdm1lemFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ2OTM2MzAsImV4cCI6MjA2MDI2OTYzMH0.41q17d1ESOdO5nKzJRwEfUayEpyZGgfBKBv7lyNU7v4",
+      "googleExpoClientId": "892453499923-1h0m9b0kcn1u2c04tq470i4e5h9gsfd6.apps.googleusercontent.com",
+      "googleAndroidClientId": "892453499923-1h0m9b0kcn1u2c04tq470i4e5h9gsfd6.apps.googleusercontent.com"
+    },
+    "experiments": {
+      "newArchEnabled": true
     }
   }
 }

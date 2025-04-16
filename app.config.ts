@@ -30,6 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true
   },
   android: {
+    package: "com.medicaction.app",
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FFFFFF'
@@ -38,5 +39,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-  }
+    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+  },
+  scheme: 'medic-action',
+  plugins: [
+    '@react-native-google-signin/google-signin'
+  ]
 });

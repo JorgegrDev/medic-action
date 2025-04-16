@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { StatusBar, View, Text, FlatList } from "react-native"
+import { StatusBar, View, Text, FlatList, AppRegistry } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { supabase } from "./lib/supabase"
 import type { Session } from "@supabase/supabase-js"
+import { registerRootComponent } from "expo"
 
 // Screens
 import AuthScreen from "./screens/AuthScreen"
@@ -128,3 +129,6 @@ export default function App() {
     </SafeAreaProvider>
   )
 }
+
+AppRegistry.registerComponent('main', () => App);
+registerRootComponent(App);
