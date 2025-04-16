@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { supabase } from "../lib/supabase"
 import type { RootStackParamList } from "../types/navigation"
 import { CheckBox } from "@rneui/themed"
+import NetInfo from "@react-native-community/netinfo"
 
 type CreateAccountScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "CreateAccount">
 
@@ -65,6 +66,13 @@ export default function CreateAccountScreen() {
 
     if (!privacyAccepted) {
       Alert.alert("Privacy Policy", "Please accept the privacy policy to continue.")
+      return
+    }
+
+    // Check network connectivity
+    const netInfo = await NetInfo.fetch()
+    if (!netInfo.isConnected) {
+      Alert.alert("Error", "No hay conexión a internet. Por favor, verifica tu conexión y vuelve a intentarlo.")
       return
     }
 

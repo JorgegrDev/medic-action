@@ -1,9 +1,7 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import React, { useState, useEffect } from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { StatusBar, View, Text, FlatList, AppRegistry, Alert, Platform } from "react-native"
+import { StatusBar, View, Text, FlatList, AppRegistry, Alert, Platform, Button } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { supabase } from "./lib/supabase"
 import type { Session } from "@supabase/supabase-js"
@@ -24,25 +22,56 @@ import type { RootStackParamList } from "./types/navigation"
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 async function registerForPushNotificationsAsync() {
-  let token
+  let token;
 
   if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Notification Permission',
+          'Would you like to receive notifications for your medications?',
+          [
+            {
+              text: 'Decline',
+              onPress: () => {
+                console.log('Notification permission declined');
+                resolve(null);
+              },
+              style: 'cancel',
+            },
+            {
+              text: 'Allow',
+              onPress: async () => {
+                const { status } = await Notifications.requestPermissionsAsync();
+                finalStatus = status;
+                if (finalStatus === 'granted') {
+                  token = await Notifications.getExpoPushTokenAsync({
+                    projectId: 'your-project-id',
+                  });
+                  console.log(token);
+                  resolve(token);
+                } else {
+                  console.log('Notification permission still not granted');
+                  resolve(null);
+                }
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+      });
+    } else {
+      token = await Notifications.getExpoPushTokenAsync({
+        projectId: 'your-project-id',
+      });
+      console.log(token);
+      return token;
     }
-    if (finalStatus !== 'granted') {
-      Alert.alert('Failed to get push token for push notification!')
-      return
-    }
-    token = await Notifications.getExpoPushTokenAsync({
-      projectId: '88a5aec4-a846-44e7-95cc-c05afd42dc4a',
-    })
-    console.log(token)
   } else {
-    Alert.alert('Must use physical device for Push Notifications')
+    Alert.alert('Must use physical device for Push Notifications');
+    return null;
   }
 
   if (Platform.OS === 'android') {
@@ -51,16 +80,16 @@ async function registerForPushNotificationsAsync() {
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
-    })
+    });
   }
 
-  return token
+  return token;
 }
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [todos, setTodos] = useState<{ id: number; title: string }[]>([])
+  const [notificationToken, setNotificationToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for existing session
@@ -76,87 +105,20 @@ export default function App() {
       setSession(session)
     })
 
-    // Fetch todos
-    const getTodos = async () => {
-      try {
-        const { data: todos, error } = await supabase.from("todos").select()
-        if (error) {
-          if (error instanceof Error) {
-            console.error("Error fetching todos:", error instanceof Error ? error.message : String(error))
-          } else {
-            console.error("Error fetching todos:", error)
-          }
-          return
-        }
-        if (todos && todos.length > 0) {
-          setTodos(todos)
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error("Error fetching todos:", error.message)
-        } else {
-          console.error("Error fetching todos:", String(error))
-        }
-      }
-    }
-
-    getTodos()
-
-    // Register for push notifications
-    registerForPushNotificationsAsync()
+    registerForPushNotificationsAsync().then(token => {
+      setNotificationToken(token || null);
+    });
 
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
-    return null
-  }
-
-  const TodoList = () => (
-    <View style={{ padding: 20 }}>
-      <Text>Todo List</Text>
-      <FlatList
-        data={todos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <Text key={item.id}>{item.title}</Text>}
-      />
-    </View>
-  )
-
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {session ? (
-            <>
-              <Stack.Screen
-                name="Main"
-                component={MainTabNavigator}
-                options={{
-                  headerRight: () => <TodoList />,
-                  headerShown: true,
-                }}
-              />
-              <Stack.Screen
-                name="AddMedication"
-                component={AddMedicationScreen}
-                options={{
-                  headerShown: true,
-                  title: "Agregar Medicamento",
-                  headerBackTitle: "Atrás",
-                }}
-              />
-              <Stack.Screen
-                name="EditMedication"
-                component={EditMedicationScreen}
-                options={{
-                  headerShown: true,
-                  title: "Editar Medicamento",
-                  headerBackTitle: "Atrás",
-                }}
-              />
-            </>
+            <Stack.Screen name="Main" component={MainTabNavigator} />
           ) : (
             <>
               <Stack.Screen name="Auth" component={AuthScreen} />
@@ -169,5 +131,4 @@ export default function App() {
   )
 }
 
-AppRegistry.registerComponent('main', () => App);
-registerRootComponent(App);
+registerRootComponent(App)

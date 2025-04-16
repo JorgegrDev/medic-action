@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from "react-native"
+import React, { useState, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { supabase } from "../lib/supabase"
@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import type { RootStackParamList } from "../types/navigation"
 import MedicationItem from "../components/MedicationItem"
 import type { Medication } from "../types/medication"
+import NetInfo from "@react-native-community/netinfo"
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Main">
 
@@ -23,8 +24,14 @@ export default function HomeScreen() {
   }, [activeTab])
 
   async function fetchMedications() {
+    setLoading(true)
     try {
-      setLoading(true)
+      // Check network connectivity
+      const netInfo = await NetInfo.fetch()
+      if (!netInfo.isConnected) {
+        Alert.alert("Error", "No hay conexión a internet. Por favor, verifica tu conexión y vuelve a intentarlo.")
+        return
+      }
 
       const {
         data: { user },
@@ -46,12 +53,14 @@ export default function HomeScreen() {
 
       if (error) {
         console.error("Error fetching medications:", error)
+        Alert.alert("Error", "Ocurrió un error al cargar los medicamentos.")
         return
       }
 
       setMedications(data || [])
-    } catch (error) {
-      console.error("Error:", error)
+    } catch (error: any) {
+      console.error("Error fetching medications:", error)
+      Alert.alert("Error", error.message || "Ocurrió un error inesperado.")
     } finally {
       setLoading(false)
     }
