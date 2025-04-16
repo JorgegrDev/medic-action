@@ -39,8 +39,10 @@
         {
           "androidClientId": "892453499923-1h0m9b0kcn1u2c04tq470i4e5h9gsfd6.apps.googleusercontent.com"
         }
-      ]
+      ],
+      "expo-auth-session"
     ],
+    "scheme": "medic-action",
     "extra": {
       "supabaseUrl": "https://zityutmxyyajzovmezaf.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdHl1dG14eXlhanpvdm1lemFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ2OTM2MzAsImV4cCI6MjA2MDI2OTYzMH0.41q17d1ESOdO5nKzJRwEfUayEpyZGgfBKBv7lyNU7v4",

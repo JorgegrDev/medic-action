@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { StatusBar, View, Text, FlatList, AppRegistry } from "react-native"
+import { StatusBar, View, Text, FlatList, AppRegistry, Alert, Platform } from "react-native"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { supabase } from "./lib/supabase"
 import type { Session } from "@supabase/supabase-js"
 import { registerRootComponent } from "expo"
+import * as Notifications from 'expo-notifications'
+import * as Device from 'expo-device'
 
 // Screens
 import AuthScreen from "./screens/AuthScreen"
@@ -20,6 +22,40 @@ import EditMedicationScreen from "./screens/EditMedicationScreen"
 import type { RootStackParamList } from "./types/navigation"
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
+
+async function registerForPushNotificationsAsync() {
+  let token
+
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync()
+    let finalStatus = existingStatus
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync()
+      finalStatus = status
+    }
+    if (finalStatus !== 'granted') {
+      Alert.alert('Failed to get push token for push notification!')
+      return
+    }
+    token = await Notifications.getExpoPushTokenAsync({
+      projectId: '88a5aec4-a846-44e7-95cc-c05afd42dc4a',
+    })
+    console.log(token)
+  } else {
+    Alert.alert('Must use physical device for Push Notifications')
+  }
+
+  if (Platform.OS === 'android') {
+    Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    })
+  }
+
+  return token
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -65,6 +101,9 @@ export default function App() {
     }
 
     getTodos()
+
+    // Register for push notifications
+    registerForPushNotificationsAsync()
 
     return () => subscription.unsubscribe()
   }, [])

@@ -1,55 +1,82 @@
 "use client"
 
 import React, { useState } from "react"
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator } from "react-native"
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, Button, Modal, ScrollView } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack"
 import { supabase } from "../lib/supabase"
 import type { RootStackParamList } from "../types/navigation"
-import * as WebBrowser from "expo-web-browser"
-import * as Google from "expo-auth-session/providers/google"
-import Constants from "expo-constants"
+import { useGoogleAuth } from "../lib/auth/google"
+import { CheckBox } from "@rneui/themed"
 
 type AuthScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Auth">
 
-WebBrowser.maybeCompleteAuthSession()
+const privacyPolicyText = `
+Medic Action, desarrollada por Jorge Garza Rosales, informa a sus usuarios que la aplicación recopila y gestiona información personal con el objetivo de brindar un servicio funcional y personalizado.
+
+Datos que recopilamos:
+- Correo electrónico (para registro e inicio de sesión).
+- Información relacionada con tus medicamentos (nombre, horario, estado).
+- Actividades dentro de la app (historial de acciones realizadas).
+
+Finalidad del tratamiento de los datos:
+- Permitir el acceso seguro a la app mediante autenticación por correo o Google.
+- Gestionar recordatorios y notificaciones sobre la toma de medicamentos.
+- Mostrar un historial de actividades realizadas dentro de la aplicación.
+
+Mecanismos de seguridad implementados:
+- Autenticación segura con Supabase y Google (OAuth 2.0).
+- Tokens protegidos y sesiones controladas.
+- Validación de correo electrónico.
+- Acceso restringido a datos solo para usuarios autenticados.
+
+Uso de servicios de terceros:
+- Supabase para autenticación y almacenamiento de datos.
+- Google OAuth para inicio de sesión.
+- Expo Notifications para el envío de recordatorios.
+
+Derechos del usuario:
+Puedes solicitar en cualquier momento la corrección o eliminación de tus datos personales almacenados en la aplicación, contactándonos a través del correo electrónico: [tu_correo@ejemplo.com].
+
+Permisos solicitados:
+Notificaciones push (necesarias para recordarte la toma de medicamentos).
+
+Este aviso puede ser actualizado en futuras versiones de la app. Se recomienda revisar periódicamente para estar al tanto de posibles cambios.
+
+Última actualización: Abril de 2025
+`
 
 export default function AuthScreen() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
+  const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false)
   const navigation = useNavigation<AuthScreenNavigationProp>()
+  const { promptAsync } = useGoogleAuth()
 
-  // Configure Google Sign-In
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: Constants.expoConfig?.extra?.googleExpoClientId,
-    androidClientId: Constants.expoConfig?.extra?.googleAndroidClientId,
-    iosClientId: Constants.expoConfig?.extra?.googleIosClientId,
-    webClientId: Constants.expoConfig?.extra?.googleWebClientId,
-  })
-
-  // Handle Google Sign-In response
-  React.useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params
-      handleGoogleSignIn(id_token)
-    }
-  }, [response])
-
-  async function handleGoogleSignIn(idToken: string) {
+  async function handleGoogleSignIn() {
     try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: idToken,
-      })
+      if (!privacyAccepted) {
+        Alert.alert("Privacy Policy", "Please accept the privacy policy to continue.")
+        return
+      }
 
-      if (error) throw error
+      const response = await promptAsync()
+
+      if (response?.type === "success") {
+        const { id_token } = response.params
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: id_token,
+        })
+
+        if (error) throw error
+      }
     } catch (error) {
-      console.error("Error with Google sign in:", error)
+      console.error("Error signing in with Google:", error)
       Alert.alert("Error", "Ocurrió un error al iniciar sesión con Google")
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -115,16 +142,15 @@ export default function AuthScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()} disabled={loading}>
-            <View style={styles.googleIconContainer}>
-              <Image
-                source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" }}
-                style={styles.googleIcon}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.googleButtonText}>Continuar con Google</Text>
-          </TouchableOpacity>
+          <Button title="Sign in with Google" onPress={handleGoogleSignIn} />
+        </View>
+
+        <View style={styles.privacyContainer}>
+          <CheckBox
+            title="I agree to the Privacy Policy"
+            checked={privacyAccepted}
+            onPress={() => setPrivacyModalVisible(true)}
+          />
         </View>
 
         <View style={styles.footer}>
@@ -136,6 +162,40 @@ export default function AuthScreen() {
           </Text>
         </View>
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isPrivacyModalVisible}
+        onRequestClose={() => {
+          setPrivacyModalVisible(!isPrivacyModalVisible)
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Privacy Policy</Text>
+            <ScrollView style={styles.modalTextContainer}>
+              <Text style={styles.modalText}>{privacyPolicyText}</Text>
+            </ScrollView>
+            <View style={styles.modalButtons}>
+              <Button
+                title="Decline"
+                onPress={() => {
+                  setPrivacyModalVisible(false)
+                  setPrivacyAccepted(false)
+                }}
+              />
+              <Button
+                title="Accept"
+                onPress={() => {
+                  setPrivacyModalVisible(false)
+                  setPrivacyAccepted(true)
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -196,26 +256,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  googleButton: {
-    flexDirection: "row",
+  privacyContainer: {
+    marginTop: 20,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    borderRadius: 8,
-    padding: 12,
-  },
-  googleIconContainer: {
-    marginRight: 8,
-  },
-  googleIcon: {
-    width: 18,
-    height: 18,
-  },
-  googleButtonText: {
-    color: "#1a1a1a",
-    fontSize: 16,
-    fontWeight: "500",
   },
   footer: {
     marginTop: "auto",
@@ -230,5 +273,46 @@ const styles = StyleSheet.create({
   footerLink: {
     color: "#1a1a1a",
     fontWeight: "500",
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalTextContainer: {
+    maxHeight: 300,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "justify",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 20,
   },
 })
